@@ -91,11 +91,26 @@ function generateMonthlyPDF(eqId, year, month) {
   legacyItems.forEach(function(item, i) {
     placedItems.push({ item: item, row: head.row + 1 + i });
   });
+  // 複数項目が同じテンプレート行を共有する場合（例: 溶接機の「作業環境」「溶接装置」）は、
+  // 1つでも✕があれば✕、それ以外で1つでも○があれば○、全て該当なしなら該当なしを書く。
+  const rowGroups = {};
   placedItems.forEach(function(entry) {
+    if (!rowGroups[entry.row]) rowGroups[entry.row] = [];
+    rowGroups[entry.row].push(entry.item);
+  });
+  Object.keys(rowGroups).forEach(function(rowKey) {
+    const row = Number(rowKey);
+    const groupItems = rowGroups[rowKey];
     for (let d = 1; d <= 31; d++) {
-      const val = dayMap[d] ? dayMap[d][entry.item] : '';
-      if (!val) continue;
-      const cell = work.getRange(entry.row, head.col + d - 1);
+      const values = groupItems
+        .map(function(item) { return dayMap[d] ? dayMap[d][item] : ''; })
+        .filter(function(v) { return v; });
+      if (values.length === 0) continue;
+      let val;
+      if (values.indexOf('✕') > -1) val = '✕';
+      else if (values.indexOf('○') > -1) val = '○';
+      else val = values[0];
+      const cell = work.getRange(row, head.col + d - 1);
       cell.setValue(val);
       if (val === '✕') cell.setFontColor('#D93025').setFontWeight('bold');
     }
