@@ -144,6 +144,14 @@
 
   function selectEq(id) { currentEq = id; loadForm(id); }
 
+  function backToPicker() {
+    const hasAnswers = Object.keys(answers).length > 0;
+    if (hasAnswers && !confirm('入力中の点検内容は保存されません。設備選択に戻りますか？')) return;
+    currentEq = '';
+    answers = {};
+    loadPicker();
+  }
+
   function renderAddEquipment(errorMsg) {
     document.getElementById('app').innerHTML =
       '<div class="topbar"><span class="eyebrow">NODAGUMI 設備点検</span><h1>設備を新規登録</h1><div class="sub">既存の種類の設備をもう一台追加します</div></div>' +
@@ -322,6 +330,7 @@
     html += '<button class="' + (tab==='form'?'active':'') + '" onclick="renderTab(\'form\')">点検入力</button>';
     html += '<button class="' + (tab==='history'?'active':'') + '" onclick="renderTab(\'history\')">点検履歴</button>';
     html += '</div>';
+    html += '<button class="ghost-btn" onclick="backToPicker()">設備選択に戻る</button>';
     html += (tab === 'form') ? renderForm() : '<div class="card" id="histBox"><div class="loading">読み込み中…</div></div>';
     document.getElementById('app').innerHTML = html;
     updateProgress();
