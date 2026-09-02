@@ -225,7 +225,7 @@
     google.script.run.withSuccessHandler(function(categories) {
       let html = '';
       if (errorMsg) html += '<div class="error-box">' + errorMsg + '</div>';
-      html += '<div class="hint-box">追加した項目は、月次PDFの元になる書式シートには自動反映されません。PDFに載せたい場合は書式シート側も別途更新してください。</div>';
+      html += '<div class="hint-box">「書式_◯◯」シートを開き、日付ヘッダー行（1,2,3…と並ぶ行）を1行目として、この項目の結果を書き込みたい行が何行下にあるかを数えて入力してください。空欄のままでもシートへの項目追加はできますが、その場合この項目は月次PDFには出力されません。</div>';
       html += '<div class="field"><div class="field-label">設備区分</div><select id="ai_category" onchange="onAddItemCategoryChange()">';
       categories.forEach(function(c) { html += '<option value="' + c.category + '">' + c.category + '</option>'; });
       html += '</select></div>';
@@ -233,6 +233,7 @@
       ['日常','3か月','1年','2年'].forEach(function(k) { html += '<option value="' + k + '">' + k + '</option>'; });
       html += '</select></div>';
       html += '<div class="field"><div class="field-label">項目名（例：ハンドル_遊びと切れ良好）</div><input type="text" id="ai_name" placeholder="部位_確認内容"></div>';
+      html += '<div class="field"><div class="field-label">PDFテンプレートの行番号（任意・空欄可）</div><input type="text" id="ai_pdfrow" inputmode="numeric" placeholder="例：3"></div>';
       html += '<button class="submit-btn" onclick="submitAddItem()">この内容で追加する</button>';
       html += '<button class="ghost-btn" onclick="loadPicker()">キャンセルして戻る</button>';
       document.getElementById('addItemBox').innerHTML = html;
@@ -250,6 +251,7 @@
   function submitAddItem() {
     const category = document.getElementById('ai_category').value;
     const itemName = document.getElementById('ai_name').value.trim();
+    const pdfRow = document.getElementById('ai_pdfrow').value.trim();
     const kubunField = document.getElementById('ai_kubun_field');
     const kubun = (kubunField.style.display !== 'none') ? document.getElementById('ai_kubun').value : '';
     if (!itemName) { alert('項目名を入力してください'); return; }
@@ -258,7 +260,7 @@
       loadPicker();
     }).withFailureHandler(function(err) {
       renderAddItem(err.message);
-    }).addInspectionItem({ category: category, itemName: itemName, kubun: kubun });
+    }).addInspectionItem({ category: category, itemName: itemName, kubun: kubun, pdfRow: pdfRow });
   }
 
   function renderLog() {

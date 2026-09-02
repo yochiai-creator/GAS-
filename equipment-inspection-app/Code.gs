@@ -200,7 +200,30 @@ function addInspectionItem(payload) {
     .build();
   const rowCount = Math.max(sh.getMaxRows() - 1, 299);
   sh.getRange(2, insertCol, rowCount, 1).setDataValidation(rule);
-  return { ok: true, item: fullName };
+  const pdfRow = payload.pdfRow ? Number(payload.pdfRow) : null;
+  if (pdfRow) {
+    setPdfRowMapping_(category, fullName, pdfRow);
+  }
+  return { ok: true, item: fullName, pdfRow: pdfRow };
+}
+function setPdfRowMapping_(category, itemName, row) {
+  const ss = getSpreadsheet_();
+  let sh = ss.getSheetByName('PDF行設定');
+  if (!sh) {
+    sh = ss.insertSheet('PDF行設定');
+    sh.getRange(1, 1, 1, 4).setValues([['設備区分', '項目名', 'テンプレート行番号（日付ヘッダー行から何行下か）', '登録日時']]);
+    sh.getRange(1, 1, 1, 4).setFontWeight('bold').setBackground('#1F4E78').setFontColor('#FFFFFF');
+    sh.setFrozenRows(1);
+  }
+  const values = sh.getDataRange().getValues();
+  for (let r = 1; r < values.length; r++) {
+    if (values[r][0] === category && values[r][1] === itemName) {
+      sh.getRange(r + 1, 3).setValue(row);
+      sh.getRange(r + 1, 4).setValue(new Date());
+      return;
+    }
+  }
+  sh.appendRow([category, itemName, row, new Date()]);
 }
 function addEquipment(payload) {
   if (!payload.eqId || !payload.category || !payload.name) {

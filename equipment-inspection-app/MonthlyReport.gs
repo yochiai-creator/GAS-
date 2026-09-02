@@ -14,6 +14,17 @@ function getItemsForSheet_(sh) {
   const excluded = FIXED_HEAD.concat(FIXED_TAIL).concat(hasKubun ? ['点検区分'] : []);
   return headers.filter(function(h) { return excluded.indexOf(h) === -1; });
 }
+function getPdfRowMap_() {
+  const sh = getSpreadsheet_().getSheetByName('PDF行設定');
+  if (!sh) return {};
+  const values = sh.getDataRange().getValues();
+  const map = {};
+  values.slice(1).forEach(function(r) {
+    if (!r[0] || !r[1] || !r[2]) return;
+    map[r[0] + '||' + r[1]] = r[2];
+  });
+  return map;
+}
 function getOrCreateFolder_(name) {
   const folders = DriveApp.getFoldersByName(name);
   if (folders.hasNext()) return folders.next();
@@ -66,12 +77,25 @@ function generateMonthlyPDF(eqId, year, month) {
   ss.moveActiveSheet(ss.getNumSheets());
   const head = findDayHeader_(work);
   if (!head) throw new Error('テンプレート内に日付ヘッダー（1,2,3...）が見つかりません: ' + templateName);
-  items.forEach(function(item, i) {
-    const itemRow = head.row + 1 + i;
+  const pdfRowMap = getPdfRowMap_();
+  const placedItems = [];
+  const legacyItems = [];
+  items.forEach(function(item) {
+    const mappedRow = pdfRowMap[category + '||' + item];
+    if (mappedRow) {
+      placedItems.push({ item: item, row: head.row + Number(mappedRow) });
+    } else {
+      legacyItems.push(item);
+    }
+  });
+  legacyItems.forEach(function(item, i) {
+    placedItems.push({ item: item, row: head.row + 1 + i });
+  });
+  placedItems.forEach(function(entry) {
     for (let d = 1; d <= 31; d++) {
-      const val = dayMap[d] ? dayMap[d][item] : '';
+      const val = dayMap[d] ? dayMap[d][entry.item] : '';
       if (!val) continue;
-      const cell = work.getRange(itemRow, head.col + d - 1);
+      const cell = work.getRange(entry.row, head.col + d - 1);
       cell.setValue(val);
       if (val === '✕') cell.setFontColor('#D93025').setFontWeight('bold');
     }
