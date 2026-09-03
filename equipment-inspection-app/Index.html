@@ -143,6 +143,7 @@
       });
       html += '</div>';
       html += '<button class="submit-btn" onclick="renderAddEquipment()">+ 設備を新規登録</button>';
+      html += '<button class="ghost-btn" onclick="renderEditEquipmentList()">設備情報を編集する</button>';
       html += '<button class="ghost-btn" onclick="renderQrList()">QRコードを発行する</button>';
       html += '<button class="ghost-btn" onclick="renderLog()">全体の点検ログを見る</button>';
       document.getElementById('app').innerHTML = html;
@@ -204,6 +205,67 @@
     }).withFailureHandler(function(err) {
       renderAddEquipment(err.message);
     }).addEquipment(payload);
+  }
+
+  function renderEditEquipmentList() {
+    document.getElementById('app').innerHTML =
+      '<div class="topbar"><span class="eyebrow">NODAGUMI 設備点検</span><h1>設備情報を編集</h1><div class="sub">編集する設備をタップしてください</div></div>' +
+      '<div class="eq-grid" id="editListBox"><div class="loading">読み込み中…</div></div>' +
+      '<button class="ghost-btn" onclick="loadPicker()">設備選択に戻る</button>';
+    google.script.run.withSuccessHandler(function(list) {
+      window.__equipmentList = list;
+      let html = '';
+      list.forEach(function(e) {
+        const color = CATEGORY_COLOR[e['設備区分']] || '#6B7280';
+        const tint = CATEGORY_TINT[e['設備区分']] || '#F1F1F3';
+        const icon = CATEGORY_ICON[e['設備区分']] || (ICON_SVG + '<circle cx="12" cy="12" r="8"/></svg>');
+        html += '<button class="eq-card" onclick="renderEditEquipmentForm(\'' + e['設備ID'] + '\')">' +
+                '<div class="eq-icon" style="background:' + tint + ';color:' + color + '">' + icon + '</div>' +
+                '<div class="eq-info"><div class="eq-name">' + e['設備名'] + '</div><div class="eq-id">' + e['設備ID'] + '</div></div>' +
+                '<div class="chevron">›</div></button>';
+      });
+      document.getElementById('editListBox').innerHTML = html;
+    }).getEquipmentList();
+  }
+
+  function renderEditEquipmentForm(eqId, errorMsg) {
+    const info = (window.__equipmentList || []).filter(function(e) { return e['設備ID'] === eqId; })[0];
+    if (!info) { renderEditEquipmentList(); return; }
+    let html = '<div class="topbar"><span class="eyebrow">' + info['設備区分'] + '　·　' + eqId + '</span><h1>設備情報を編集</h1></div>';
+    html += '<div class="card">';
+    if (errorMsg) html += '<div class="error-box">' + errorMsg + '</div>';
+    html += '<div class="field"><div class="field-label">設備名</div><input type="text" id="ef_name" value="' + info['設備名'] + '"></div>';
+    html += '<div class="field"><div class="field-label">管理番号</div><input type="text" id="ef_manageNo" value="' + (info['管理番号'] || '') + '"></div>';
+    html += '<div class="field"><div class="field-label">設置場所</div><input type="text" id="ef_location" value="' + (info['設置場所'] || '') + '"></div>';
+    html += '<div class="field"><div class="field-label">部署</div><input type="text" id="ef_dept" value="' + (info['部署'] || '') + '"></div>';
+    html += '<div class="field"><div class="field-label">責任者</div><input type="text" id="ef_owner" value="' + (info['責任者'] || '') + '"></div>';
+    html += '<div class="field"><div class="field-label">点検頻度</div><input type="text" id="ef_freq" value="' + (info['点検頻度'] || '') + '"></div>';
+    html += '<div class="field"><div class="field-label">備考</div><input type="text" id="ef_note" value="' + (info['備考'] || '') + '"></div>';
+    html += '<button class="submit-btn" onclick="submitEditEquipment(\'' + eqId + '\')">この内容で保存する</button>';
+    html += '<button class="ghost-btn" onclick="renderEditEquipmentList()">キャンセルして戻る</button>';
+    html += '</div>';
+    document.getElementById('app').innerHTML = html;
+  }
+
+  function submitEditEquipment(eqId) {
+    const name = document.getElementById('ef_name').value.trim();
+    if (!name) { alert('設備名を入力してください'); return; }
+    const payload = {
+      eqId: eqId,
+      name: name,
+      manageNo: document.getElementById('ef_manageNo').value.trim(),
+      location: document.getElementById('ef_location').value.trim(),
+      dept: document.getElementById('ef_dept').value.trim(),
+      owner: document.getElementById('ef_owner').value.trim(),
+      freq: document.getElementById('ef_freq').value.trim(),
+      note: document.getElementById('ef_note').value.trim()
+    };
+    document.getElementById('app').innerHTML = '<div class="loading">保存中…</div>';
+    google.script.run.withSuccessHandler(function() {
+      renderEditEquipmentList();
+    }).withFailureHandler(function(err) {
+      renderEditEquipmentForm(eqId, err.message);
+    }).updateEquipment(payload);
   }
 
   function renderQrList() {

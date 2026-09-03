@@ -208,3 +208,29 @@ function addEquipment(payload) {
   sh.appendRow(row);
   return { ok: true };
 }
+function updateEquipment(payload) {
+  if (!payload.eqId) throw new Error('設備IDは必須です');
+  if (!payload.name) throw new Error('設備名は必須です');
+  const sh = getSpreadsheet_().getSheetByName('設備マスタ');
+  const values = sh.getDataRange().getValues();
+  const headers = values[0];
+  const idxEq = headers.indexOf('設備ID');
+  let rowIndex = -1;
+  for (let r = 1; r < values.length; r++) {
+    if (values[r][idxEq] === payload.eqId) { rowIndex = r; break; }
+  }
+  if (rowIndex === -1) throw new Error('設備が見つかりません: ' + payload.eqId);
+  const newRow = headers.map(function(h, i) {
+    if (h === '設備ID' || h === '設備区分') return values[rowIndex][i];
+    if (h === '設備名') return payload.name;
+    if (h === '管理番号') return payload.manageNo || payload.eqId;
+    if (h === '設置場所') return payload.location || '';
+    if (h === '部署') return payload.dept || '';
+    if (h === '責任者') return payload.owner || '';
+    if (h === '点検頻度') return payload.freq || '';
+    if (h === '備考') return payload.note || '';
+    return values[rowIndex][i];
+  });
+  sh.getRange(rowIndex + 1, 1, 1, headers.length).setValues([newRow]);
+  return { ok: true };
+}
