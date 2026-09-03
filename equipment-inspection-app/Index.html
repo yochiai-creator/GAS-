@@ -125,20 +125,24 @@
   function init() {
     document.getElementById('app').innerHTML =
       '<div class="topbar"><span class="eyebrow">NODAGUMI 設備点検</span><h1>点検アプリ</h1></div><div class="loading">読み込み中…</div>';
-    if (currentEq) { loadForm(currentEq); } else { loadPicker(); }
+    loadPicker();
   }
 
   function loadPicker() {
     google.script.run.withSuccessHandler(function(list) {
-      let html = '<div class="topbar"><span class="eyebrow">NODAGUMI 設備点検</span><h1>設備を選ぼう</h1><div class="sub">点検する設備をタップしてください</div></div>';
+      window.__equipmentList = list;
+      const counts = {};
+      list.forEach(function(e) { counts[e['設備区分']] = (counts[e['設備区分']] || 0) + 1; });
+      const categories = Object.keys(counts);
+      let html = '<div class="topbar"><span class="eyebrow">NODAGUMI 設備点検</span><h1>設備区分を選ぼう</h1><div class="sub">点検する設備の種類をタップしてください</div></div>';
       html += '<div class="eq-grid">';
-      list.forEach(function(e) {
-        const color = CATEGORY_COLOR[e['設備区分']] || '#6B7280';
-        const tint = CATEGORY_TINT[e['設備区分']] || '#F1F1F3';
-        const icon = CATEGORY_ICON[e['設備区分']] || (ICON_SVG + '<circle cx="12" cy="12" r="8"/></svg>');
-        html += '<button class="eq-card" onclick="selectEq(\'' + e['設備ID'] + '\')">' +
+      categories.forEach(function(cat) {
+        const color = CATEGORY_COLOR[cat] || '#6B7280';
+        const tint = CATEGORY_TINT[cat] || '#F1F1F3';
+        const icon = CATEGORY_ICON[cat] || (ICON_SVG + '<circle cx="12" cy="12" r="8"/></svg>');
+        html += '<button class="eq-card" onclick="renderCategoryEquipment(\'' + cat + '\')">' +
                 '<div class="eq-icon" style="background:' + tint + ';color:' + color + '">' + icon + '</div>' +
-                '<div class="eq-info"><div class="eq-name">' + e['設備名'] + '</div><div class="eq-id">' + e['設備ID'] + (e['設置場所'] ? '　·　' + e['設置場所'] : '') + '</div></div>' +
+                '<div class="eq-info"><div class="eq-name">' + cat + '</div><div class="eq-id">' + counts[cat] + '台</div></div>' +
                 '<div class="chevron">›</div></button>';
       });
       html += '</div>';
@@ -148,6 +152,24 @@
       html += '<button class="ghost-btn" onclick="renderLog()">全体の点検ログを見る</button>';
       document.getElementById('app').innerHTML = html;
     }).getEquipmentList();
+  }
+
+  function renderCategoryEquipment(category) {
+    const list = (window.__equipmentList || []).filter(function(e) { return e['設備区分'] === category; });
+    const color = CATEGORY_COLOR[category] || '#6B7280';
+    const tint = CATEGORY_TINT[category] || '#F1F1F3';
+    const icon = CATEGORY_ICON[category] || (ICON_SVG + '<circle cx="12" cy="12" r="8"/></svg>');
+    let html = '<div class="topbar"><span class="eyebrow">' + category + '</span><h1>設備を選ぼう</h1><div class="sub">点検する設備をタップしてください</div></div>';
+    html += '<div class="eq-grid">';
+    list.forEach(function(e) {
+      html += '<button class="eq-card" onclick="selectEq(\'' + e['設備ID'] + '\')">' +
+              '<div class="eq-icon" style="background:' + tint + ';color:' + color + '">' + icon + '</div>' +
+              '<div class="eq-info"><div class="eq-name">' + e['設備名'] + '</div><div class="eq-id">' + e['設備ID'] + (e['設置場所'] ? '　·　' + e['設置場所'] : '') + '</div></div>' +
+              '<div class="chevron">›</div></button>';
+    });
+    html += '</div>';
+    html += '<button class="ghost-btn" onclick="loadPicker()">設備区分の選択に戻る</button>';
+    document.getElementById('app').innerHTML = html;
   }
 
   function selectEq(id) { currentEq = id; loadForm(id); }
