@@ -25,10 +25,17 @@ jobs:
       - name: Install clasp
         run: npm install -g @google/clasp
 
-      - name: Restore clasp credentials
-        run: echo "${CLASPRC_JSON}" > ~/.clasprc.json
+      - name: Write service account credentials
+        run: echo "${GCP_SA_KEY}" > creds.json
         env:
-          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Authenticate clasp with service account
+        run: clasp login --creds creds.json
 
       - name: Push to Google Apps Script
         run: clasp push --force
+
+      - name: Clean up credentials
+        if: always()
+        run: rm -f creds.json
