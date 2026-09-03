@@ -147,13 +147,6 @@ function getAllLogs(limit) {
 function getCategoryList() {
   return Object.keys(CATEGORY_SHEET);
 }
-function getCategoryInfo() {
-  return Object.keys(CATEGORY_SHEET).map(function(cat) {
-    const sh = getSpreadsheet_().getSheetByName(CATEGORY_SHEET[cat]);
-    const headers = sh ? sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0] : [];
-    return { category: cat, hasKubun: headers.indexOf('点検区分') > -1 };
-  });
-}
 function getWebAppUrl() {
   return ScriptApp.getService().getUrl();
 }
@@ -167,44 +160,6 @@ function getEquipmentQrList() {
       url: baseUrl + '?eq=' + encodeURIComponent(e['設備ID'])
     };
   });
-}
-function addInspectionItem(payload) {
-  const category = (payload.category || '').trim();
-  const itemName = (payload.itemName || '').trim();
-  const kubun = (payload.kubun || '').trim();
-  if (!category || !itemName) throw new Error('設備区分と項目名は必須です');
-  const sheetName = CATEGORY_SHEET[category];
-  if (!sheetName) throw new Error('未対応の設備区分です: ' + category);
-  const sh = getSpreadsheet_().getSheetByName(sheetName);
-  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  const hasKubun = headers.indexOf('点検区分') > -1;
-  if (hasKubun && !kubun) throw new Error('この設備区分では点検区分の指定が必要です');
-  const fullName = (hasKubun && kubun) ? (kubun + '_' + itemName) : itemName;
-  if (headers.indexOf(fullName) > -1) {
-    throw new Error('この項目は既に存在します: ' + fullName);
-  }
-  const tailIdx = headers.indexOf(FIXED_TAIL[0]);
-  if (tailIdx === -1) throw new Error('シート構成が想定と異なります（' + FIXED_TAIL[0] + '列が見つかりません）');
-  const insertCol = tailIdx + 1;
-  sh.insertColumnBefore(insertCol);
-  const headerCell = sh.getRange(1, insertCol);
-  headerCell.setValue(fullName)
-    .setBackground('#E2EFDA')
-    .setFontWeight('bold')
-    .setHorizontalAlignment('center')
-    .setVerticalAlignment('middle')
-    .setWrap(true);
-  const rule = SpreadsheetApp.newDataValidation()
-    .requireValueInList(['○', '✕', '該当なし'], true)
-    .setAllowInvalid(false)
-    .build();
-  const rowCount = Math.max(sh.getMaxRows() - 1, 299);
-  sh.getRange(2, insertCol, rowCount, 1).setDataValidation(rule);
-  const pdfRow = payload.pdfRow ? Number(payload.pdfRow) : null;
-  if (pdfRow) {
-    setPdfRowMapping_(category, fullName, pdfRow);
-  }
-  return { ok: true, item: fullName, pdfRow: pdfRow };
 }
 function setPdfRowMapping_(category, itemName, row) {
   const ss = getSpreadsheet_();

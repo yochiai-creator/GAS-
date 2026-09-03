@@ -79,7 +79,6 @@
     .success-title { font-size: 18px; font-weight: 700; color: var(--ink); margin-bottom: 5px; font-family: inherit; }
     .success-sub { font-size: 13px; color: var(--muted); margin-bottom: 22px; font-weight: 500; }
     .error-box { background: var(--danger-soft); border: 1px solid rgba(225,82,75,.25); border-radius: 12px; padding: 11px 14px; font-size: 13px; font-weight: 600; color: var(--danger); margin-bottom: 14px; }
-    .hint-box { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 11px 14px; font-size: 12.5px; font-weight: 500; color: var(--muted); margin-bottom: 14px; line-height:1.6; }
     .qr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .qr-item { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px; text-align: center; box-shadow: var(--shadow-sm); }
     .qr-canvas { display: flex; justify-content: center; margin-bottom: 10px; min-height: 130px; align-items: center; }
@@ -140,7 +139,6 @@
       html += '</div>';
       html += '<button class="submit-btn" onclick="renderAddEquipment()">+ 設備を新規登録</button>';
       html += '<button class="ghost-btn" onclick="renderQrList()">QRコードを発行する</button>';
-      html += '<button class="ghost-btn" onclick="renderAddItem()">点検項目を増やす</button>';
       html += '<button class="ghost-btn" onclick="renderLog()">全体の点検ログを見る</button>';
       document.getElementById('app').innerHTML = html;
     }).getEquipmentList();
@@ -228,51 +226,6 @@
         });
       });
     }).getEquipmentQrList();
-  }
-
-  function renderAddItem(errorMsg) {
-    document.getElementById('app').innerHTML =
-      '<div class="topbar"><span class="eyebrow">NODAGUMI 設備点検</span><h1>点検項目を増やす</h1><div class="sub">同じ区分のすべての設備に項目が追加されます</div></div>' +
-      '<div class="card" id="addItemBox"><div class="loading">読み込み中…</div></div>';
-    google.script.run.withSuccessHandler(function(categories) {
-      let html = '';
-      if (errorMsg) html += '<div class="error-box">' + errorMsg + '</div>';
-      html += '<div class="hint-box">「書式_◯◯」シートを開き、日付ヘッダー行（1,2,3…と並ぶ行）を1行目として、この項目の結果を書き込みたい行が何行下にあるかを数えて入力してください。空欄のままでもシートへの項目追加はできますが、その場合この項目は月次PDFには出力されません。</div>';
-      html += '<div class="field"><div class="field-label">設備区分</div><select id="ai_category" onchange="onAddItemCategoryChange()">';
-      categories.forEach(function(c) { html += '<option value="' + c.category + '">' + c.category + '</option>'; });
-      html += '</select></div>';
-      html += '<div class="field" id="ai_kubun_field"><div class="field-label">点検区分</div><select id="ai_kubun">';
-      ['日常','3か月','1年','2年'].forEach(function(k) { html += '<option value="' + k + '">' + k + '</option>'; });
-      html += '</select></div>';
-      html += '<div class="field"><div class="field-label">項目名（例：ハンドル_遊びと切れ良好）</div><input type="text" id="ai_name" placeholder="部位_確認内容"></div>';
-      html += '<div class="field"><div class="field-label">PDFテンプレートの行番号（任意・空欄可）</div><input type="text" id="ai_pdfrow" inputmode="numeric" placeholder="例：3"></div>';
-      html += '<button class="submit-btn" onclick="submitAddItem()">この内容で追加する</button>';
-      html += '<button class="ghost-btn" onclick="loadPicker()">キャンセルして戻る</button>';
-      document.getElementById('addItemBox').innerHTML = html;
-      window.__categoryInfo = categories;
-      onAddItemCategoryChange();
-    }).getCategoryInfo();
-  }
-
-  function onAddItemCategoryChange() {
-    const sel = document.getElementById('ai_category');
-    const info = (window.__categoryInfo || []).filter(function(c) { return c.category === sel.value; })[0];
-    document.getElementById('ai_kubun_field').style.display = (info && info.hasKubun) ? '' : 'none';
-  }
-
-  function submitAddItem() {
-    const category = document.getElementById('ai_category').value;
-    const itemName = document.getElementById('ai_name').value.trim();
-    const pdfRow = document.getElementById('ai_pdfrow').value.trim();
-    const kubunField = document.getElementById('ai_kubun_field');
-    const kubun = (kubunField.style.display !== 'none') ? document.getElementById('ai_kubun').value : '';
-    if (!itemName) { alert('項目名を入力してください'); return; }
-    document.getElementById('addItemBox').innerHTML = '<div class="loading">追加中…</div>';
-    google.script.run.withSuccessHandler(function() {
-      loadPicker();
-    }).withFailureHandler(function(err) {
-      renderAddItem(err.message);
-    }).addInspectionItem({ category: category, itemName: itemName, kubun: kubun, pdfRow: pdfRow });
   }
 
   function renderLog() {
