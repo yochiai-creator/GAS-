@@ -73,6 +73,15 @@
 
 ## デプロイ方法
 
-`.github/workflows/deploy-gas.yml` により、このフォルダ配下（`equipment-inspection-app/`）への変更を `claude/equipment-inspection-app-3glfyc` ブランチにpushすると、GitHub Actionsが自動で `clasp push` を実行し、実際のGASプロジェクトに反映する。
+**手動デプロイのみ**（GitHub Actionsによる自動デプロイは廃止）。
 
-初回セットアップとして、リポジトリの Settings → Secrets and variables → Actions で `CLASPRC_JSON` という名前のSecretを登録する必要がある（値は自分のPCで `clasp login` した後の `~/.clasprc.json` の中身）。
+GitHub Actions経由での自動デプロイ（`clasp login`の個人認証をCIで使う方式）を試みたが、Google Workspace組織のセキュリティポリシーにより、無人環境からのログインが`invalid_grant`（reauth required）エラーで拒否されるため断念した。回避策としてサービスアカウント認証も検討したが、組織ポリシーでサービスアカウントの鍵作成自体が制限されており、設定作業が煩雑なため見送った。
+
+反映手順（このフォルダで実行）:
+
+```bash
+git pull origin claude/equipment-inspection-app-3glfyc
+clasp push --force
+```
+
+`.clasp.json` に既にスクリプトID（上記参照）が設定済みなので、`clasp login` さえ済んでいれば追加設定は不要。
