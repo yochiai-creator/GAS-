@@ -113,6 +113,10 @@
     '溶接機': '#FBEAE8', 'クレーン': '#E9F1FA', '局所排気装置': '#E7F8F3',
     'コンプレッサ': '#F0EEFB', 'リフト': '#FBF3E2'
   };
+  const CATEGORY_LABEL = {
+    'コンプレッサ': 'コンプレッサー', 'リフト': 'フォークリフト'
+  };
+  function categoryLabel(cat) { return CATEGORY_LABEL[cat] || cat; }
   const ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">';
   const CATEGORY_ICON = {
     '溶接機': ICON_SVG + '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
@@ -142,7 +146,7 @@
         const icon = CATEGORY_ICON[cat] || (ICON_SVG + '<circle cx="12" cy="12" r="8"/></svg>');
         html += '<button class="eq-card" onclick="renderCategoryEquipment(\'' + cat + '\')">' +
                 '<div class="eq-icon" style="background:' + tint + ';color:' + color + '">' + icon + '</div>' +
-                '<div class="eq-info"><div class="eq-name">' + cat + '</div><div class="eq-id">' + counts[cat] + '台</div></div>' +
+                '<div class="eq-info"><div class="eq-name">' + categoryLabel(cat) + '</div><div class="eq-id">' + counts[cat] + '台</div></div>' +
                 '<div class="chevron">›</div></button>';
       });
       html += '</div>';
@@ -159,7 +163,7 @@
     const color = CATEGORY_COLOR[category] || '#6B7280';
     const tint = CATEGORY_TINT[category] || '#F1F1F3';
     const icon = CATEGORY_ICON[category] || (ICON_SVG + '<circle cx="12" cy="12" r="8"/></svg>');
-    let html = '<div class="topbar"><span class="eyebrow">' + category + '</span><h1>設備を選ぼう</h1><div class="sub">点検する設備をタップしてください</div></div>';
+    let html = '<div class="topbar"><span class="eyebrow">' + categoryLabel(category) + '</span><h1>設備を選ぼう</h1><div class="sub">点検する設備をタップしてください</div></div>';
     html += '<div class="eq-grid">';
     list.forEach(function(e) {
       html += '<button class="eq-card" onclick="selectEq(\'' + e['設備ID'] + '\')">' +
@@ -190,7 +194,7 @@
       let html = '';
       if (errorMsg) html += '<div class="error-box">' + errorMsg + '</div>';
       html += '<div class="field"><div class="field-label">設備区分</div><select id="af_category">';
-      categories.forEach(function(c) { html += '<option value="' + c + '">' + c + '</option>'; });
+      categories.forEach(function(c) { html += '<option value="' + c + '">' + categoryLabel(c) + '</option>'; });
       html += '</select></div>';
       html += '<div class="field"><div class="field-label">設備ID（重複しない管理コード）</div><input type="text" id="af_id" placeholder="例：EW-900"></div>';
       html += '<div class="field"><div class="field-label">設備名</div><input type="text" id="af_name" placeholder="例：炭酸ガス溶接機"></div>';
@@ -253,7 +257,7 @@
   function renderEditEquipmentForm(eqId, errorMsg) {
     const info = (window.__equipmentList || []).filter(function(e) { return e['設備ID'] === eqId; })[0];
     if (!info) { renderEditEquipmentList(); return; }
-    let html = '<div class="topbar"><span class="eyebrow">' + info['設備区分'] + '　·　' + eqId + '</span><h1>設備情報を編集</h1></div>';
+    let html = '<div class="topbar"><span class="eyebrow">' + categoryLabel(info['設備区分']) + '　·　' + eqId + '</span><h1>設備情報を編集</h1></div>';
     html += '<div class="card">';
     if (errorMsg) html += '<div class="error-box">' + errorMsg + '</div>';
     html += '<div class="field"><div class="field-label">設備名</div><input type="text" id="ef_name" value="' + info['設備名'] + '"></div>';
@@ -368,7 +372,7 @@
 
   function renderTab(tab) {
     let html = '<div class="topbar">';
-    html += '<span class="eyebrow">' + formData.equipment['設備区分'] + '　·　' + formData.email + '</span>';
+    html += '<span class="eyebrow">' + categoryLabel(formData.equipment['設備区分']) + '　·　' + formData.email + '</span>';
     html += '<h1>' + formData.equipment['設備名'] + '</h1>';
     html += '<div class="sub">' + (formData.equipment['設置場所'] || formData.equipment['設備ID']) + '</div>';
     html += '</div>';
