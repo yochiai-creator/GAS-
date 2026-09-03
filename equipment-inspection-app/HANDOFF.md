@@ -12,7 +12,7 @@
 
 - **スプレッドシートID**: `10NiNUNnb6ql4KV3U_G_7sFJW7gPi7uLB8yB8X5i8t-c`
   （ファイル名: 点検表アプリ_元データ（自動生成）)
-- **スクリプトID**: `1c4Bu6IVfE9CvMZAhnUZKAwFHqaYQejJZyeIbyw-GjasCHf4q4hB0lC9p`
+- **スクリプトID**: `13b-00v8M_3J9wdZ6vJFNnjJIi6IiyHBNFS5ildrJywldLwOz-T1qrukz`
 - **ウェブアプリURL**:
   `https://script.google.com/a/macros/nodagumi40.com/s/AKfycbzaiJjt77lOnFiqDS25HCd6NijPixYTzON0PdjF_TRlh5OF5nLKtwrKcDC3X-6fnqdX8w/exec`
   （設備を指定して開く場合は末尾に `?eq=設備ID` を付ける。例: `?eq=EW-794`）
