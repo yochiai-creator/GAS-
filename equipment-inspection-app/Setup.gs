@@ -94,51 +94,31 @@ function backfillPdfRowMappings() {
   Logger.log(mappings.length + '件のPDF行設定を登録しました。');
 }
 
-// 書式_リフトの日付欄（「日」という文字だけが並んでいる状態）を
-// 実際の数字 1〜31 に書き換え、必要なら列数を31日分まで増やす（1回限り実行）。
+// 書式_リフトの日付欄（「日」という文字だけが並んでいる状態）に、
+// 実際の数字 1〜31 を書き込む（1回限り実行）。
 // 「点検日」行と「作業前点検項目」行の両方に同じ数字を入れる
 // （generateMonthlyPDFが日付ヘッダーとして読むのは後者）。
-// 列の挿入とラベル検索によるセル特定を行うため、実行後は必ず
-// 書式_リフトシートを開いて列崩れ・結合セルの乱れが無いか目視確認すること。
-function fixLiftTemplateDayHeader() {
-  const ss = getSpreadsheet_();
-  const sh = ss.getSheetByName('書式_リフト');
+// このバージョンは値を書き込むだけで、列の追加・削除は一切行わない。
+// 31列分の空き（既存の日列＋手動で追加した列）が既にある前提。
+// まだ列が31に足りない場合は、Sheets上で該当行の右クリック→
+// 「列を挿入」で先に手動で列を追加してから実行すること。
+function setLiftDayNumbers() {
+  const sh = getSpreadsheet_().getSheetByName('書式_リフト');
   if (!sh) throw new Error('書式_リフトシートが見つかりません');
   const data = sh.getDataRange().getValues();
-
-  let targetRow = -1, labelCol = -1;
-  for (let r = 0; r < data.length && targetRow === -1; r++) {
-    for (let c = 0; c < data[r].length; c++) {
-      if (data[r][c] === '作業前点検項目') { targetRow = r; labelCol = c; break; }
-    }
-  }
-  if (targetRow === -1) {
-    throw new Error('「作業前点検項目」の行が見つかりません。シート構成が想定と異なる可能性があるため中止しました。');
-  }
-
-  const rowValues = data[targetRow];
-  let lastDayCol = labelCol;
-  for (let c = labelCol + 1; c < rowValues.length; c++) {
-    if (rowValues[c] === '') break;
-    lastDayCol = c;
-  }
-  const currentDayCount = lastDayCol - labelCol;
-  const neededExtra = 31 - currentDayCount;
-  if (neededExtra > 0) {
-    sh.insertColumnsAfter(lastDayCol + 1, neededExtra);
-  } else if (neededExtra < 0) {
-    throw new Error('日付欄が既に31列を超えています。想定外の構成のため中止しました（手動確認してください）。');
-  }
-
+  let found = 0;
   ['点検日', '作業前点検項目'].forEach(function(label) {
     for (let r = 0; r < data.length; r++) {
-      if (data[r][labelCol] === label) {
+      const c = data[r].indexOf(label);
+      if (c > -1) {
         for (let d = 1; d <= 31; d++) {
-          sh.getRange(r + 1, labelCol + 1 + d).setValue(d);
+          sh.getRange(r + 1, c + 1 + d).setValue(d);
         }
+        found++;
         break;
       }
     }
   });
-  Logger.log('書式_リフトの日付欄を1〜31の数字に修正しました。シートを開いて列崩れが無いか必ず確認してください。');
+  if (found < 2) throw new Error('「点検日」または「作業前点検項目」の行が見つかりませんでした。シート構成を確認してください。');
+  Logger.log('書式_リフトの日付欄を1〜31の数字に設定しました（列の追加・削除は行っていません）。');
 }
