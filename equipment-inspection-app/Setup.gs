@@ -141,3 +141,72 @@ function setLiftDayNumbers() {
   if (found < 2) throw new Error('「点検日」または「作業前点検項目」の行が見つかりませんでした。シート構成を確認してください。');
   Logger.log('書式_リフトの日付欄を1〜31の数字に設定しました（列の追加・削除は行っていません）。');
 }
+
+// 指定シート内の結合セルが占める全マス（行,列）の集合を返す。
+// 結合セルの2マス目以降はgetValues()では空文字に見えてしまい、
+// 「空いているマス」と誤認して書き込むと結合セルの一部を編集しようとして
+// エラーになる（＝安全側に倒れて壊れないが、正しい空きマスを見つけるために除外する）。
+function getMergedCellSet_(sheet) {
+  const set = {};
+  sheet.getMergedRanges().forEach(function(rng) {
+    const r1 = rng.getRow(), c1 = rng.getColumn();
+    const numRows = rng.getNumRows(), numCols = rng.getNumColumns();
+    for (let rr = r1; rr < r1 + numRows; rr++) {
+      for (let cc = c1; cc < c1 + numCols; cc++) {
+        set[rr + '_' + cc] = true;
+      }
+    }
+  });
+  return set;
+}
+
+// 書式_局所排気・書式_コンプレッサには「管理番号：」欄がそもそも存在しないため、
+// 既存のラベル（設備名：／工　場　名）と同じ行にある、結合セルではない
+// 本当に空いているマスを2つ探し、そこに新しく「管理番号：」欄を追加する（1回限り実行）。
+// 列番号をハードコードせず、結合セル情報を見ながら動的に空きマスを探すことで、
+// リフトの日付欄修正で起きたような列ズレ・レイアウト崩壊を避けている。
+// 既に追加済みの場合や、空きマスが見つからない場合は何もしない（安全に無害）。
+function addManagementNumberLabels() {
+  const targets = [
+    { sheet: '書式_局所排気', anchor: '設備名：' },
+    { sheet: '書式_コンプレッサ', anchor: '工　場　名' }
+  ];
+  const results = [];
+  targets.forEach(function(t) {
+    const sh = getSpreadsheet_().getSheetByName(t.sheet);
+    if (!sh) { results.push(t.sheet + ': シートが見つかりません'); return; }
+    const data = sh.getDataRange().getValues();
+    const mergedSet = getMergedCellSet_(sh);
+    let anchorRow = -1, anchorCol = -1;
+    for (let r = 0; r < data.length && anchorRow === -1; r++) {
+      for (let c = 0; c < data[r].length; c++) {
+        const cell = data[r][c];
+        if (typeof cell === 'string' && cell.indexOf(t.anchor) === 0) {
+          anchorRow = r; anchorCol = c; break;
+        }
+      }
+    }
+    if (anchorRow === -1) { results.push(t.sheet + ': ラベル「' + t.anchor + '」が見つかりません'); return; }
+    const rowData = data[anchorRow];
+    if (rowData.some(function(v) { return typeof v === 'string' && v.indexOf('管理番号：') === 0; })) {
+      results.push(t.sheet + ': 既に管理番号欄があるためスキップしました');
+      return;
+    }
+    const isFree = function(c) {
+      return rowData[c] === '' && !mergedSet[(anchorRow + 1) + '_' + (c + 1)];
+    };
+    let gapStart = -1;
+    for (let c = anchorCol + 1; c + 1 < rowData.length; c++) {
+      if (isFree(c) && isFree(c + 1)) { gapStart = c; break; }
+    }
+    if (gapStart === -1) {
+      results.push(t.sheet + ': ラベルを追加できる空きスペースが見つかりませんでした');
+      return;
+    }
+    sh.getRange(anchorRow + 1, gapStart + 1).setValue('管理番号：');
+    sh.getRange(anchorRow + 1, gapStart + 2).setValue('－');
+    results.push(t.sheet + ': ' + (anchorRow + 1) + '行' + (gapStart + 1) + '列目に「管理番号：」欄を追加しました');
+  });
+  Logger.log(results.join('\n'));
+  return results;
+}
