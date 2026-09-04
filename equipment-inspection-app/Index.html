@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --bg: #F5F5F7; --surface: #ffffff; --ink: #16181D; --muted: #6B7280; --faint: #9CA3AF;
+      --border: #E7E7EA; --accent: #4C5FD5; --accent-soft: #EEF0FC;
+      --success: #1FAE8C; --success-soft: #E7F8F3; --danger: #E1524B; --danger-soft: #FCEAE9;
+      --warning: #C99A3B; --warning-soft: #FBF3E2;
+      --shadow-sm: 0 1px 2px rgba(16,24,40,.05); --shadow-md: 0 12px 28px -14px rgba(16,24,40,.22);
+    }
+    * { box-sizing: border-box; }
+    body { font-family: "Noto Sans JP", "Inter", sans-serif; margin: 0; background: var(--bg); min-height: 100vh; color: var(--ink); -webkit-font-smoothing: antialiased; }
+    h1, h2, .display { font-family: "Inter", "Noto Sans JP", sans-serif; letter-spacing: -.01em; }
+    #app { max-width: 480px; margin: 0 auto; padding: 0 16px 48px; }
+    .stripe { height: 4px; background: linear-gradient(90deg, var(--accent), var(--success)); }
+    .topbar { padding: 24px 2px 18px; }
+    .topbar .eyebrow { display: inline-block; font-size: 11px; letter-spacing: .04em; font-weight: 700; background: var(--accent-soft); color: var(--accent); padding: 4px 11px; border-radius: 20px; margin-bottom: 12px; text-transform: uppercase; }
+    .topbar h1 { font-size: 23px; margin: 0; font-weight: 700; color: var(--ink); }
+    .topbar .sub { font-size: 13px; color: var(--muted); margin-top: 5px; font-weight: 500; }
+    .tab-bar { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 4px; margin: 18px 0 16px; box-shadow: var(--shadow-sm); }
+    .tab-bar button { flex: 1; border: none; background: transparent; padding: 10px 0; font-size: 14px; font-weight: 600; color: var(--muted); border-radius: 10px; font-family: inherit; transition: all .18s ease; cursor: pointer; }
+    .tab-bar button.active { background: var(--ink); color: #fff; }
+    .card { background: var(--surface); border-radius: 20px; padding: 20px; margin-bottom: 14px; border: 1px solid var(--border); box-shadow: var(--shadow-md); }
+    .progress-wrap { margin-bottom: 2px; }
+    .progress-label { display:flex; justify-content:space-between; font-size:12.5px; color:var(--muted); font-weight:600; margin-bottom:8px; }
+    .progress-bar-bg { height: 8px; background: var(--bg); border-radius: 20px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--success)); border-radius: 20px; transition: width .3s ease; }
+    .item { padding: 16px 0; border-bottom: 1px solid var(--border); }
+    .item:last-of-type { border-bottom: none; }
+    .item-label { font-size: 14px; font-weight: 600; margin-bottom: 11px; color: var(--ink); line-height:1.45; }
+    .btn-group { display: flex; gap: 8px; }
+    .btn-group button { flex: 1; padding: 11px 0; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface); font-size: 14px; font-weight: 600; color: var(--muted); font-family: inherit; transition: all .15s ease; cursor: pointer; }
+    .btn-group button:active { transform: scale(.96); }
+    .btn-group button.selected-ok { background: var(--success-soft); border-color: var(--success); color: var(--success); }
+    .btn-group button.selected-ng { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+    .btn-group button.selected-na { background: var(--bg); border-color: var(--faint); color: var(--muted); }
+    .field { margin-bottom: 16px; }
+    .field-label { font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 7px; }
+    select, textarea, input[type=text] { width: 100%; padding: 12px 13px; border-radius: 12px; border: 1.5px solid var(--border); font-size: 14.5px; font-family: inherit; background: var(--bg); color: var(--ink); transition: border-color .15s ease, background .15s ease; }
+    select:focus, textarea:focus, input:focus { outline: none; background: var(--surface); border-color: var(--accent); }
+    .submit-btn { width: 100%; padding: 15px; background: var(--accent); color: #fff; border: none; border-radius: 14px; font-size: 15.5px; font-weight: 700; margin-top: 6px; font-family: inherit; box-shadow: 0 10px 20px -8px rgba(76,95,213,.55); transition: all .15s ease; cursor: pointer; }
+    .submit-btn:disabled { background: var(--border); color: var(--faint); box-shadow: none; cursor: default; }
+    .submit-btn:active:not(:disabled) { transform: translateY(1px); box-shadow: 0 4px 10px -4px rgba(76,95,213,.5); }
+    .ghost-btn { width: 100%; padding: 12px; background: transparent; color: var(--muted); border: 1.5px solid var(--border); border-radius: 14px; font-size: 14px; font-weight: 600; font-family: inherit; margin-top: 10px; cursor: pointer; transition: all .15s ease; }
+    .ghost-btn:hover, .ghost-btn:active { background: var(--bg); color: var(--ink); }
+    .eq-grid { display: flex; flex-direction: column; gap: 10px; }
+    .eq-card { display: flex; align-items: center; gap: 13px; padding: 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--border); text-align: left; font-family: inherit; box-shadow: var(--shadow-sm); transition: all .15s ease; cursor: pointer; }
+    .eq-card:active { transform: scale(.98); box-shadow: var(--shadow-md); }
+    .eq-icon { width: 44px; height: 44px; border-radius: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .eq-icon svg { width: 22px; height: 22px; }
+    .eq-info { flex: 1; }
+    .eq-name { font-size: 14.5px; font-weight: 600; color: var(--ink); font-family: inherit; }
+    .eq-id { font-size: 12px; color: var(--faint); margin-top: 2px; font-weight: 500; }
+    .chevron { color: var(--faint); font-size: 20px; font-weight: 400; }
+    .hist-item { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+    .hist-item:last-child { border-bottom: none; }
+    .hist-stripe { width: 3px; border-radius: 6px; flex-shrink: 0; }
+    .hist-stripe.ok { background: var(--success); }
+    .hist-stripe.ng { background: var(--danger); }
+    .hist-stripe.mid { background: var(--warning); }
+    .hist-body { flex: 1; }
+    .hist-date { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+    .hist-meta { font-size: 12px; color: var(--faint); margin-top: 2px; }
+    .hist-badge { display:inline-block; font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; margin-top:7px; }
+    .hist-badge.ok { background: var(--success-soft); color: var(--success); }
+    .hist-badge.ng { background: var(--danger-soft); color: var(--danger); }
+    .hist-badge.mid { background: var(--warning-soft); color: var(--warning); }
+    .hist-ijou { font-size:12.5px; color: var(--danger); margin-top:6px; font-weight:500; }
+    .loading { text-align: center; padding: 60px 0; color: var(--faint); font-size: 13.5px; font-weight: 600; }
+    .empty { text-align: center; padding: 32px 0; color: var(--faint); font-size: 13.5px; font-weight: 600; }
+    .success-wrap { text-align: center; padding: 28px 10px; }
+    .success-icon { width: 68px; height: 68px; border-radius: 50%; background: var(--success-soft); color: var(--success); display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 18px; font-weight: 700; }
+    .success-title { font-size: 18px; font-weight: 700; color: var(--ink); margin-bottom: 5px; font-family: inherit; }
+    .success-sub { font-size: 13px; color: var(--muted); margin-bottom: 22px; font-weight: 500; }
+    .error-box { background: var(--danger-soft); border: 1px solid rgba(225,82,75,.25); border-radius: 12px; padding: 11px 14px; font-size: 13px; font-weight: 600; color: var(--danger); margin-bottom: 14px; }
+    .qr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .qr-item { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px; text-align: center; box-shadow: var(--shadow-sm); }
+    .qr-canvas { display: flex; justify-content: center; margin-bottom: 10px; min-height: 130px; align-items: center; }
+    .qr-canvas img { image-rendering: pixelated; }
+    .qr-label { font-size: 13px; font-weight: 600; color: var(--ink); font-family: inherit; }
+    .qr-id { font-size: 11px; color: var(--faint); margin-top: 2px; font-weight: 500; }
+    @media print {
+      .stripe, .topbar .eyebrow, .tab-bar, .ghost-btn, .submit-btn, .no-print { display: none !important; }
+      body { background: #fff; }
+      .card { box-shadow: none; border: 1px solid #ccc; }
+      .qr-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="stripe"></div>
+  <div id="app"><div class="loading">読み込み中…</div></div>
+
+<script>
+  const EQ = <?!= JSON.stringify(eq) ?>;
+  let currentEq = EQ;
+  let formData = null;
+  let answers = {};
+  let currentItems = [];
+  let selectedKubun = '日常';
+
+  const CATEGORY_COLOR = {
+    '溶接機': '#D9584F', 'クレーン': '#3F7FBF', '局所排気装置': '#1FAE8C',
+    'コンプレッサ': '#7C6FD1', 'リフト': '#C99A3B'
+  };
+  const CATEGORY_TINT = {
+    '溶接機': '#FBEAE8', 'クレーン': '#E9F1FA', '局所排気装置': '#E7F8F3',
+    'コンプレッサ': '#F0EEFB', 'リフト': '#FBF3E2'
+  };
+  const CATEGORY_LABEL = {
+    'コンプレッサ': 'コンプレッサー', 'リフト': 'フォークリフト'
+  };
+  function categoryLabel(cat) { return CATEGORY_LABEL[cat] || cat; }
+  const ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">';
+  const CATEGORY_ICON = {
+    '溶接機': ICON_SVG + '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+    'クレーン': ICON_SVG + '<path d="M3 20h6"/><path d="M6 20V4"/><path d="M6 4h14"/><path d="M6 12l7-8"/><path d="M18 4v6"/><path d="M18 10a2 2 0 1 1-4 0"/></svg>',
+    '局所排気装置': ICON_SVG + '<path d="M10.83 16.38a6.08 6.08 0 0 1-8.62-7l5.41 1.45a6.08 6.08 0 0 1 7-8.62l-1.45 5.41a6.08 6.08 0 0 1 8.62 7l-5.41-1.45a6.08 6.08 0 0 1-7 8.62l1.45-5.41Z"/><circle cx="12" cy="12" r=".6" fill="currentColor"/></svg>',
+    'コンプレッサ': ICON_SVG + '<path d="M4 13a8 8 0 1 1 16 0"/><path d="M12 13V9"/><path d="M12 13l3-2"/><path d="M3 19h18"/></svg>',
+    'リフト': ICON_SVG + '<path d="M3 12h6v6H3z"/><path d="M9 17h4"/><path d="M13 3v14"/><path d="M13 8h5l2 4h-7"/><circle cx="6" cy="19.5" r="1.4"/><circle cx="18" cy="19.5" r="1.4"/></svg>'
+  };
+
+  function init() {
+    document.getElementById('app').innerHTML =
+      '<div class="topbar"><span class="eyebrow">NODAGUMI 設備点検</span><h1>点検アプリ</h1></div><div class="loading">読み込み中…</div>';
+    loadPicker();
+  }
+
+  function loadPicker() {
+    google.script.run.withSuccessHandler(function(list) {
+      window.__equipmentList = list;
+      const counts = {};
+      list.forEach(function(e) { counts[e['設備区分']] = (counts[e['設備区分']] || 0) + 1; });
+      const categories = Object.keys(counts);
+      let html = '<div class="topbar"><span class="eyebrow">NODAGUMI 設備点検</span><h1>設備区分を選ぼう</h1><div class="sub">点検する設備の種類をタップしてください</div></div>';
+      html += '<div class="eq-grid">';
+      categories.forEach(function(cat) {
+        const color = CATEGORY_COLOR[cat] || '#6B7280';
+        const tint = CATEGORY_TINT[cat] || '#F1F1F3';
+        const icon = CATEGORY_ICON[cat] || (ICON_SVG + '<circle cx="12" cy="12" r="8"/></svg>');
+        html += '<button class="eq-card" onclick="renderCategoryEquipment(\'' + cat + '\')">' +
+                '<div class="eq-icon" style="background:' + tint + ';color:' + color + '">' + icon + '</div>' +
+                '<div class="eq-info"><div class="eq-name">' + categoryLabel(cat) + '</div><div class="eq-id">' + counts[cat] + '台</div></div>' +
+                '<div class="chevron">›</div></button>';
+      });
+      html += '</div>';
+      html += '<button class="submit-btn" onclick="renderAddEquipment()">+ 設備を新規登録</button>';
+      html += '<button class="ghost-btn" onclick="renderEditEquipmentList()">設備情報を編集する</button>';
+      html += '<button class="ghost-btn" onclick="renderQrList()">QRコードを発行する</button>';
+      html += '<button class="ghost-btn" onclick="renderLog()">全体の点検ログを見る</button>';
+      document.getElementById('app').innerHTML = html;
+    }).getEquipmentList();
+  }
+
+  function renderCategoryEquipment(category) {
+    const list = (window.__equipmentList || []).filter(function(e) { return e['設備区分'] === category; });
+    const color = CATEGORY_COLOR[category] || '#6B7280';
+    const tint = CATEGORY_TINT[category] || '#F1F1F3';
+    const icon = CATEGORY_ICON[category] || (ICON_SVG + '<circle cx="12" cy="12" r="8"/></svg>');
+    let html = '<div class="topbar"><span class="eyebrow">' + categoryLabel(category) + '</span><h1>設備を選ぼう</h1><div class="sub">点検する設備をタップしてください</div></div>';
+    html += '<div class="eq-grid">';
+    list.forEach(function(e) {
+      html += '<button class="eq-card" onclick="selectEq(\'' + e['設備ID'] + '\')">' +
+              '<div class="eq-icon" style="background:' + tint + ';color:' + color + '">' + icon + '</div>' +
+              '<div class="eq-info"><div class="eq-name">' + e['設備名'] + '</div><div class="eq-id">' + e['設備ID'] + (e['設置場所'] ? '　·　' + e['設置場所'] : '') + '</div></div>' +
+              '<div class="chevron">›</div></button>';
+    });
+    html += '</div>';
+    html += '<button class="ghost-btn" onclick="loadPicker()">設備区分の選択に戻る</button>';
+    document.getElementById('app').innerHTML = html;
+  }
+
+  function selectEq(id) { currentEq = id; loadForm(id); }
+
+  function backToPicker() {
+    const hasAnswers = Object.keys(answers).length > 0;
+    if (hasAnswers && !confirm('入力中の点検内容は保存されません。設備選択に戻りますか？')) return;
+    currentEq = '';
+    answers = {};
+    loadPicker();
+  }
+
+  function renderAddEquipment(errorMsg) {
+    document.getElementById('app').innerHTML =
+      '<div class="topbar"><span class="eyebrow">NODAGUMI 設備点検</span><h1>設備を新規登録</h1><div class="sub">既存の種類の設備をもう一台追加します</div></div>' +
+      '<div class="card" id="addBox"><div class="loading">読み込み中…</div></div>';
+    google.script.run.withSuccessHandler(function(categories) {
+      let html = '';
+      if (errorMsg) html += '<div class="error-box">' + errorMsg + '</div>';
+      html += '<div class="field"><div class="field-label">設備区分</div><select id="af_category">';
+      categories.forEach(function(c) { html += '<option value="' + c + '">' + categoryLabel(c) + '</option>'; });
+      html += '</select></div>';
+      html += '<div class="field"><div class="field-label">設備ID（重複しない管理コード）</div><input type="text" id="af_id" placeholder="例：EW-900"></div>';
+      html += '<div class="field"><div class="field-label">設備名</div><input type="text" id="af_name" placeholder="例：炭酸ガス溶接機"></div>';
+      html += '<div class="field"><div class="field-label">管理番号（未入力なら設備IDと同じ）</div><input type="text" id="af_manageNo"></div>';
+      html += '<div class="field"><div class="field-label">設置場所</div><input type="text" id="af_location"></div>';
+      html += '<div class="field"><div class="field-label">部署</div><input type="text" id="af_dept" value="野田組"></div>';
+      html += '<div class="field"><div class="field-label">責任者</div><input type="text" id="af_owner"></div>';
+      html += '<div class="field"><div class="field-label">点検頻度</div><input type="text" id="af_freq" placeholder="例：作業前"></div>';
+      html += '<div class="field"><div class="field-label">備考</div><input type="text" id="af_note"></div>';
+      html += '<button class="submit-btn" onclick="submitAddEquipment()">この内容で登録する</button>';
+      html += '<button class="ghost-btn" onclick="loadPicker()">キャンセルして戻る</button>';
+      document.getElementById('addBox').innerHTML = html;
+    }).getCategoryList();
+  }
+
+  function submitAddEquipment() {
+    const eqId = document.getElementById('af_id').value.trim();
+    const name = document.getElementById('af_name').value.trim();
+    if (!eqId || !name) { alert('設備IDと設備名は必須です'); return; }
+    const payload = {
+      category: document.getElementById('af_category').value,
+      eqId: eqId,
+      name: name,
+      manageNo: document.getElementById('af_manageNo').value.trim(),
+      location: document.getElementById('af_location').value.trim(),
+      dept: document.getElementById('af_dept').value.trim(),
+      owner: document.getElementById('af_owner').value.trim(),
+      freq: document.getElementById('af_freq').value.trim(),
+      note: document.getElementById('af_note').value.trim()
+    };
+    document.getElementById('addBox').innerHTML = '<div class="loading">登録中…</div>';
+    google.script.run.withSuccessHandler(function() {
+      loadPicker();
+    }).withFailureHandler(function(err) {
+      renderAddEquipment(err.message);
+    }).addEquipment(payload);
+  }
+
+  function renderEditEquipmentList() {
+    document.getElementById('app').innerHTML =
+      '<div class="topbar"><span class="eyebrow">NODAGUMI 設備点検</span><h1>設備情報を編集</h1><div class="sub">編集する設備をタップしてください</div></div>' +
+      '<div class="eq-grid" id="editListBox"><div class="loading">読み込み中…</div></div>' +
+      '<button class="ghost-btn" onclick="loadPicker()">設備選択に戻る</button>';
+    google.script.run.withSuccessHandler(function(list) {
+      window.__equipmentList = list;
+      let html = '';
+      list.forEach(function(e) {
+        const color = CATEGORY_COLOR[e['設備区分']] || '#6B7280';
+        const tint = CATEGORY_TINT[e['設備区分']] || '#F1F1F3';
+        const icon = CATEGORY_ICON[e['設備区分']] || (ICON_SVG + '<circle cx="12" cy="12" r="8"/></svg>');
+        html += '<button class="eq-card" onclick="renderEditEquipmentForm(\'' + e['設備ID'] + '\')">' +
+                '<div class="eq-icon" style="background:' + tint + ';color:' + color + '">' + icon + '</div>' +
+                '<div class="eq-info"><div class="eq-name">' + e['設備名'] + '</div><div class="eq-id">' + e['設備ID'] + '</div></div>' +
+                '<div class="chevron">›</div></button>';
+      });
+      document.getElementById('editListBox').innerHTML = html;
+    }).getEquipmentList();
+  }
+
+  function renderEditEquipmentForm(eqId, errorMsg) {
+    const info = (window.__equipmentList || []).filter(function(e) { return e['設備ID'] === eqId; })[0];
+    if (!info) { renderEditEquipmentList(); return; }
+    let html = '<div class="topbar"><span class="eyebrow">' + categoryLabel(info['設備区分']) + '　·　' + eqId + '</span><h1>設備情報を編集</h1></div>';
+    html += '<div class="card">';
+    if (errorMsg) html += '<div class="error-box">' + errorMsg + '</div>';
+    html += '<div class="field"><div class="field-label">設備名</div><input type="text" id="ef_name" value="' + info['設備名'] + '"></div>';
+    html += '<div class="field"><div class="field-label">管理番号</div><input type="text" id="ef_manageNo" value="' + (info['管理番号'] || '') + '"></div>';
+    html += '<div class="field"><div class="field-label">設置場所</div><input type="text" id="ef_location" value="' + (info['設置場所'] || '') + '"></div>';
+    html += '<div class="field"><div class="field-label">部署</div><input type="text" id="ef_dept" value="' + (info['部署'] || '') + '"></div>';
+    html += '<div class="field"><div class="field-label">責任者</div><input type="text" id="ef_owner" value="' + (info['責任者'] || '') + '"></div>';
+    html += '<div class="field"><div class="field-label">点検頻度</div><input type="text" id="ef_freq" value="' + (info['点検頻度'] || '') + '"></div>';
+    html += '<div class="field"><div class="field-label">備考</div><input type="text" id="ef_note" value="' + (info['備考'] || '') + '"></div>';
+    html += '<button class="submit-btn" onclick="submitEditEquipment(\'' + eqId + '\')">この内容で保存する</button>';
+    html += '<button class="ghost-btn" onclick="renderEditEquipmentList()">キャンセルして戻る</button>';
+    html += '</div>';
+    document.getElementById('app').innerHTML = html;
+  }
+
+  function submitEditEquipment(eqId) {
+    const name = document.getElementById('ef_name').value.trim();
+    if (!name) { alert('設備名を入力してください'); return; }
+    const payload = {
+      eqId: eqId,
+      name: name,
+      manageNo: document.getElementById('ef_manageNo').value.trim(),
+      location: document.getElementById('ef_location').value.trim(),
+      dept: document.getElementById('ef_dept').value.trim(),
+      owner: document.getElementById('ef_owner').value.trim(),
+      freq: document.getElementById('ef_freq').value.trim(),
+      note: document.getElementById('ef_note').value.trim()
+    };
+    document.getElementById('app').innerHTML = '<div class="loading">保存中…</div>';
+    google.script.run.withSuccessHandler(function() {
+      renderEditEquipmentList();
+    }).withFailureHandler(function(err) {
+      renderEditEquipmentForm(eqId, err.message);
+    }).updateEquipment(payload);
+  }
+
+  function renderQrList() {
+    document.getElementById('app').innerHTML =
+      '<div class="topbar"><span class="eyebrow">NODAGUMI 設備点検</span><h1>QRコード発行</h1><div class="sub">設備に貼り付けて、スキャンすると点検フォームが直接開きます</div></div>' +
+      '<div class="card" id="qrBox"><div class="loading">読み込み中…</div></div>' +
+      '<button class="ghost-btn" onclick="loadPicker()">設備選択に戻る</button>';
+    google.script.run.withSuccessHandler(function(list) {
+      if (list.length === 0) {
+        document.getElementById('qrBox').innerHTML = '<div class="empty">設備が登録されていません</div>';
+        return;
+      }
+      let h = '<button class="submit-btn no-print" onclick="window.print()">この一覧を印刷する</button>';
+      h += '<div class="qr-grid" style="margin-top:14px;">';
+      list.forEach(function(e) {
+        h += '<div class="qr-item"><div class="qr-canvas" id="qr_' + e.eqId + '"></div>' +
+             '<div class="qr-label">' + e.name + '</div><div class="qr-id">' + e.eqId + '</div></div>';
+      });
+      h += '</div>';
+      document.getElementById('qrBox').innerHTML = h;
+      list.forEach(function(e) {
+        new QRCode(document.getElementById('qr_' + e.eqId), {
+          text: e.url, width: 140, height: 140,
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      });
+    }).getEquipmentQrList();
+  }
+
+  function renderLog() {
+    document.getElementById('app').innerHTML =
+      '<div class="topbar"><span class="eyebrow">NODAGUMI 設備点検</span><h1>点検ログ</h1><div class="sub">全設備の最新の点検記録</div></div>' +
+      '<div class="card" id="logBox"><div class="loading">読み込み中…</div></div>' +
+      '<button class="ghost-btn" onclick="loadPicker()">設備選択に戻る</button>';
+    google.script.run.withSuccessHandler(function(rows) {
+      let h = '';
+      if (rows.length === 0) { h = '<div class="empty">記録はまだありません</div>'; }
+      else {
+        rows.forEach(function(r) {
+          const cls = r.hantei === '合格' ? 'ok' : (r.hantei === '要注意' ? 'mid' : (r.hantei ? 'ng' : 'mid'));
+          h += '<div class="hist-item"><div class="hist-stripe ' + cls + '"></div><div class="hist-body">' +
+               '<div class="hist-date">' + r.date + '　·　' + r.eqName + '</div>' +
+               '<div class="hist-meta">' + r.user + '</div>' +
+               '<span class="hist-badge ' + cls + '">' + (r.hantei || '記録あり') + '</span>' +
+               (r.ijou ? '<div class="hist-ijou">⚠ ' + r.ijou + '</div>' : '') + '</div></div>';
+        });
+      }
+      document.getElementById('logBox').innerHTML = h;
+    }).getAllLogs(50);
+  }
+
+  function loadForm(eqId) {
+    document.getElementById('app').innerHTML =
+      '<div class="topbar"><span class="eyebrow">NODAGUMI 設備点検</span><h1>読み込み中</h1></div><div class="loading">読み込み中…</div>';
+    google.script.run.withSuccessHandler(function(data) {
+      if (data.error) {
+        document.getElementById('app').innerHTML =
+          '<div class="topbar"><span class="eyebrow">エラー</span><h1>設備が見つかりません</h1></div><div class="card">' + data.error + '</div>';
+        return;
+      }
+      formData = data;
+      answers = {};
+      selectedKubun = '日常';
+      renderTab('form');
+    }).getFormForEquipment(eqId);
+  }
+
+  function getFilteredItems() {
+    if (!formData.hasKubun) return formData.items;
+    return formData.items.filter(function(item) { return item.indexOf(selectedKubun + '_') === 0; });
+  }
+
+  function changeKubun(val) {
+    selectedKubun = val;
+    answers = {};
+    renderTab('form');
+  }
+
+  function renderTab(tab) {
+    let html = '<div class="topbar">';
+    html += '<span class="eyebrow">' + categoryLabel(formData.equipment['設備区分']) + '　·　' + formData.email + '</span>';
+    html += '<h1>' + formData.equipment['設備名'] + '</h1>';
+    html += '<div class="sub">' + (formData.equipment['設置場所'] || formData.equipment['設備ID']) + '</div>';
+    html += '</div>';
+    html += '<div class="tab-bar">';
+    html += '<button class="' + (tab==='form'?'active':'') + '" onclick="renderTab(\'form\')">点検入力</button>';
+    html += '<button class="' + (tab==='history'?'active':'') + '" onclick="renderTab(\'history\')">点検履歴</button>';
+    html += '</div>';
+    html += '<button class="ghost-btn" onclick="backToPicker()">設備選択に戻る</button>';
+    html += (tab === 'form') ? renderForm() : '<div class="card" id="histBox"><div class="loading">読み込み中…</div></div>';
+    document.getElementById('app').innerHTML = html;
+    updateProgress();
+
+    if (tab === 'history') {
+      google.script.run.withSuccessHandler(function(rows) {
+        let h = '';
+        if (rows.length === 0) { h = '<div class="empty">点検履歴はまだありません</div>'; }
+        else {
+          rows.forEach(function(r) {
+            const cls = r.hantei === '合格' ? 'ok' : (r.hantei === '要注意' ? 'mid' : (r.hantei ? 'ng' : 'mid'));
+            h += '<div class="hist-item"><div class="hist-stripe ' + cls + '"></div><div class="hist-body">' +
+                 '<div class="hist-date">' + r.date + '</div>' +
+                 '<div class="hist-meta">' + r.user + '</div>' +
+                 '<span class="hist-badge ' + cls + '">' + (r.hantei || '記録あり') + '</span>' +
+                 (r.ijou ? '<div class="hist-ijou">⚠ ' + r.ijou + '</div>' : '') + '</div></div>';
+          });
+        }
+        document.getElementById('histBox').innerHTML = h;
+      }).getHistory(currentEq, 20);
+    }
+  }
+
+  function renderForm() {
+    currentItems = getFilteredItems();
+    let html = '<div class="card">';
+    html += '<div class="progress-wrap"><div class="progress-label"><span>点検の進み具合</span><span id="progressText">0 / ' + currentItems.length + '</span></div>';
+    html += '<div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div></div>';
+    html += '</div>';
+
+    html += '<div class="card">';
+    if (formData.hasKubun) {
+      html += '<div class="field"><div class="field-label">点検区分</div>';
+      html += '<select id="kubun" onchange="changeKubun(this.value)">';
+      ['日常','3か月','1年','2年'].forEach(function(k) {
+        html += '<option value="' + k + '"' + (k === selectedKubun ? ' selected' : '') + '>' + k + '</option>';
+      });
+      html += '</select></div>';
+    }
+    if (currentItems.length === 0) {
+      html += '<div class="empty">この区分の点検項目はありません</div>';
+    }
+    currentItems.forEach(function(item, idx) {
+      html += '<div class="item"><div class="item-label">' + item + '</div>';
+      html += '<div class="btn-group">';
+      html += '<button id="btn_' + idx + '_ok" onclick="pick(' + idx + ',\'' + item + '\',\'○\')">○ 良好</button>';
+      html += '<button id="btn_' + idx + '_ng" onclick="pick(' + idx + ',\'' + item + '\',\'✕\')">✕ 異常</button>';
+      html += '<button id="btn_' + idx + '_na" onclick="pick(' + idx + ',\'' + item + '\',\'該当なし\')">該当なし</button>';
+      html += '</div></div>';
+    });
+    html += '</div>';
+
+    html += '<div class="card">';
+    html += '<div class="field"><div class="field-label">総合判定</div>';
+    html += '<select id="hantei"><option value="合格">合格</option><option value="要注意">要注意</option><option value="使用禁止">使用禁止</option></select></div>';
+    html += '<div class="field"><div class="field-label">異常内容（あれば）</div><textarea id="ijou" rows="2"></textarea></div>';
+    html += '<div class="field"><div class="field-label">処置内容（あれば）</div><textarea id="shochi" rows="2"></textarea></div>';
+    html += '<button class="submit-btn" id="submitBtn" onclick="submitForm()" disabled>すべての項目に回答してください</button>';
+    html += '</div>';
+    return html;
+  }
+
+  function pick(idx, item, val) {
+    answers[item] = val;
+    ['ok','ng','na'].forEach(function(k) {
+      const el = document.getElementById('btn_'+idx+'_'+k);
+      if (el) el.className = '';
+    });
+    const key = val === '○' ? 'ok' : (val === '✕' ? 'ng' : 'na');
+    document.getElementById('btn_'+idx+'_'+key).className = 'selected-' + key;
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const fill = document.getElementById('progressFill');
+    if (!fill) return;
+    const total = currentItems.length;
+    const done = Object.keys(answers).filter(function(k) { return currentItems.indexOf(k) > -1; }).length;
+    const pct = total ? Math.round((done / total) * 100) : 100;
+    fill.style.width = pct + '%';
+    document.getElementById('progressText').textContent = done + ' / ' + total;
+    const btn = document.getElementById('submitBtn');
+    if (btn) {
+      if (done === total) { btn.disabled = false; btn.textContent = 'この内容で点検を記録する'; }
+      else { btn.disabled = true; btn.textContent = 'すべての項目に回答してください'; }
+    }
+  }
+
+  function submitForm() {
+    const missing = currentItems.filter(function(item) { return !answers[item]; });
+    if (missing.length > 0) { alert('未回答の項目があります：' + missing[0]); return; }
+    const payload = {
+      eqId: currentEq,
+      kubun: formData.hasKubun ? selectedKubun : '',
+      items: answers,
+      hantei: document.getElementById('hantei').value,
+      ijou: document.getElementById('ijou').value,
+      shochi: document.getElementById('shochi').value
+    };
+    document.getElementById('app').innerHTML =
+      '<div class="topbar"><span class="eyebrow">送信中</span><h1>少々お待ちください</h1></div><div class="loading">送信中…</div>';
+    google.script.run.withSuccessHandler(function() {
+      document.getElementById('app').innerHTML =
+        '<div class="topbar"><span class="eyebrow">完了</span><h1>' + formData.equipment['設備名'] + '</h1></div>' +
+        '<div class="card success-wrap">' +
+        '<div class="success-icon">✓</div>' +
+        '<div class="success-title">点検を記録しました</div>' +
+        '<div class="success-sub">お疲れさまでした</div>' +
+        '<button class="submit-btn" onclick="loadForm(currentEq)">続けて点検する</button>' +
+        '<button class="ghost-btn" onclick="loadPicker()">別の設備を点検する</button>' +
+        '</div>';
+    }).withFailureHandler(function(err) {
+      alert('エラー: ' + err.message);
+      renderTab('form');
+    }).submitInspection(payload);
+  }
+
+  init();
+</script>
+</body>
+</html>
