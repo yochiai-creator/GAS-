@@ -30,6 +30,40 @@ function getOrCreateFolder_(name) {
   if (folders.hasNext()) return folders.next();
   return DriveApp.createFolder(name);
 }
+// テンプレート内で「ラベル:値」の形になっているセルを探し、値を書き換える。
+// ラベルと値が同じセルに入っている場合（例:「責任者：落合　雄平」）はセル全体を
+// 「ラベル+新しい値」で置き換える。ラベルだけのセルの場合は、同じ行でラベルの
+// 右側にある最初の空でないセル（＝値のセル）を探して置き換える。
+// 見つからなければ何もしない（テンプレートにその項目が無いだけなので無害）。
+function writeLabelValue_(sheet, labelPrefix, value) {
+  const data = sheet.getDataRange().getValues();
+  for (let r = 0; r < data.length; r++) {
+    for (let c = 0; c < data[r].length; c++) {
+      const cell = data[r][c];
+      if (typeof cell !== 'string' || cell.indexOf(labelPrefix) !== 0) continue;
+      const rest = cell.slice(labelPrefix.length).trim();
+      if (rest !== '') {
+        sheet.getRange(r + 1, c + 1).setValue(labelPrefix + value);
+      } else {
+        for (let c2 = c + 1; c2 < data[r].length; c2++) {
+          if (data[r][c2] !== '') {
+            sheet.getRange(r + 1, c2 + 1).setValue(value);
+            break;
+          }
+        }
+      }
+      return;
+    }
+  }
+}
+// 区分ごとに、テンプレート内のどのラベルに設備マスタのどの項目を書き込むか。
+// 溶接機・局所排気装置のみ対応（ラベルと値の配置が明確に確認できたもの）。
+// クレーン・コンプレッサ・リフトは、ラベルの文字幅や結合セルの構造が
+// 目視で確認しきれておらず、誤った位置に書き込むリスクがあるため見送り。
+const HEADER_LABEL_FIELDS = {
+  '溶接機': [['管理番号：', '管理番号'], ['部署：', '部署'], ['場所：', '設置場所'], ['責任者：', '責任者']],
+  '局所排気装置': [['設備名：', '設備名'], ['担当：', '責任者']]
+};
 function findDayHeader_(sheet) {
   const data = sheet.getDataRange().getValues();
   for (let r = 0; r < data.length; r++) {
@@ -75,6 +109,9 @@ function generateMonthlyPDF(eqId, year, month) {
   const work = template.copyTo(ss);
   ss.setActiveSheet(work);
   ss.moveActiveSheet(ss.getNumSheets());
+  (HEADER_LABEL_FIELDS[category] || []).forEach(function(pair) {
+    writeLabelValue_(work, pair[0], info[pair[1]] || '');
+  });
   const head = findDayHeader_(work);
   if (!head) throw new Error('テンプレート内に日付ヘッダー（1,2,3...）が見つかりません: ' + templateName);
   const pdfRowMap = getPdfRowMap_();
