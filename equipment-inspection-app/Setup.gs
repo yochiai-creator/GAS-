@@ -210,3 +210,54 @@ function addManagementNumberLabels() {
   Logger.log(results.join('\n'));
   return results;
 }
+
+// addManagementNumberLabels()が書式_局所排気に追加した「管理番号：」欄（2行5列目）は、
+// 隣の「設備名：」の値（長い文字列）がその空きマスまではみ出して表示される仕様の
+// 真上に置いてしまい、PDF上で文字が分断されて見える不具合があった（データ自体は無事）。
+// この関数は、その欄を「担当：（値）」よりさらに右側にある、はみ出し表示と重ならない
+// 広い空きスペースへ移動する（1回限り実行）。移動後も「管理番号：」というラベル文字列
+// 自体は変わらないため、writeLabelValue_ / HEADER_LABEL_FIELDS側の変更は不要。
+function fixExhaustManagementNumberPosition() {
+  const sh = getSpreadsheet_().getSheetByName('書式_局所排気');
+  if (!sh) throw new Error('書式_局所排気シートが見つかりません');
+  const data = sh.getDataRange().getValues();
+  const mergedSet = getMergedCellSet_(sh);
+  let labelRow = -1, labelCol = -1;
+  for (let r = 0; r < data.length && labelRow === -1; r++) {
+    for (let c = 0; c < data[r].length; c++) {
+      if (typeof data[r][c] === 'string' && data[r][c].indexOf('管理番号：') === 0) {
+        labelRow = r; labelCol = c; break;
+      }
+    }
+  }
+  if (labelRow === -1) {
+    Logger.log('「管理番号：」欄が見つかりません（既に移動済み、またはaddManagementNumberLabels未実行）。');
+    return;
+  }
+  const rowData = data[labelRow];
+  const oldValueCol = (labelCol + 1 < rowData.length && rowData[labelCol + 1] !== '') ? labelCol + 1 : -1;
+  const oldValue = oldValueCol > -1 ? rowData[oldValueCol] : '';
+  let tantoCol = -1;
+  for (let c = 0; c < rowData.length; c++) {
+    if (typeof rowData[c] === 'string' && rowData[c].indexOf('担当：') === 0) { tantoCol = c; break; }
+  }
+  if (tantoCol === -1) throw new Error('「担当：」欄が見つかりません');
+  let tantoValueCol = -1;
+  for (let c = tantoCol + 1; c < rowData.length; c++) {
+    if (rowData[c] !== '') { tantoValueCol = c; break; }
+  }
+  const searchFrom = tantoValueCol > -1 ? tantoValueCol + 1 : tantoCol + 1;
+  const isFree = function(c) {
+    return rowData[c] === '' && !mergedSet[(labelRow + 1) + '_' + (c + 1)] && c !== labelCol && c !== oldValueCol;
+  };
+  let gapStart = -1;
+  for (let c = searchFrom; c + 1 < rowData.length; c++) {
+    if (isFree(c) && isFree(c + 1)) { gapStart = c; break; }
+  }
+  if (gapStart === -1) throw new Error('移動先の空きマスが見つかりませんでした');
+  sh.getRange(labelRow + 1, labelCol + 1).clearContent();
+  if (oldValueCol > -1) sh.getRange(labelRow + 1, oldValueCol + 1).clearContent();
+  sh.getRange(labelRow + 1, gapStart + 1).setValue('管理番号：');
+  sh.getRange(labelRow + 1, gapStart + 2).setValue(oldValue || '－');
+  Logger.log('書式_局所排気: 管理番号欄を' + (labelRow + 1) + '行' + (gapStart + 1) + '列目に移動しました（設備名表示との重なりを解消）。');
+}
