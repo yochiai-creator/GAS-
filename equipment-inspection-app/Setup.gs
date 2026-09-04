@@ -148,7 +148,7 @@ function setLiftDayNumbers() {
 // エラーになる（＝安全側に倒れて壊れないが、正しい空きマスを見つけるために除外する）。
 function getMergedCellSet_(sheet) {
   const set = {};
-  sheet.getMergedRanges().forEach(function(rng) {
+  sheet.getDataRange().getMergedRanges().forEach(function(rng) {
     const r1 = rng.getRow(), c1 = rng.getColumn();
     const numRows = rng.getNumRows(), numCols = rng.getNumColumns();
     for (let rr = r1; rr < r1 + numRows; rr++) {
